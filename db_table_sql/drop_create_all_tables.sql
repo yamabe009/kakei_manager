@@ -11,37 +11,36 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 
 -- Dumping structure for テーブル kakei_manager.items
-DROP TABLE IF EXISTS `items`;
 CREATE TABLE IF NOT EXISTS `items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_id` int(11) DEFAULT NULL COMMENT '大分類ID',
   `title` varchar(255) NOT NULL COMMENT '小分類',
+  `ord` int(11) NOT NULL DEFAULT '0' COMMENT '表示順序',
   `created` datetime DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `group_id_title` (`group_id`,`title`),
   CONSTRAINT `group_key` FOREIGN KEY (`group_id`) REFERENCES `item_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='費目　小分類';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='費目　小分類';
 
 -- エクスポートするデータが選択されていません
 
 
 -- Dumping structure for テーブル kakei_manager.item_groups
-DROP TABLE IF EXISTS `item_groups`;
 CREATE TABLE IF NOT EXISTS `item_groups` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '大分類ID',
   `title` varchar(255) NOT NULL COMMENT '大分類',
+  `ord` int(11) NOT NULL DEFAULT '0' COMMENT '表示順序',
   `created` datetime DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `title` (`title`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='費目　大分類';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='費目　大分類';
 
 -- エクスポートするデータが選択されていません
 
 
 -- Dumping structure for テーブル kakei_manager.members
-DROP TABLE IF EXISTS `members`;
 CREATE TABLE IF NOT EXISTS `members` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL COMMENT 'メンバー名（夫、妻、名前など）',
@@ -49,63 +48,73 @@ CREATE TABLE IF NOT EXISTS `members` (
   `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='家族';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='家族';
 
 -- エクスポートするデータが選択されていません
 
 
--- Dumping structure for テーブル kakei_manager.receipt_bds
-DROP TABLE IF EXISTS `receipt_bds`;
-CREATE TABLE IF NOT EXISTS `receipt_bds` (
-  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'レシートBDのid',
-  `hd_id` int(11) NOT NULL DEFAULT '0' COMMENT 'receipt_hdのid',
+-- Dumping structure for テーブル kakei_manager.payments
+CREATE TABLE IF NOT EXISTS `payments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `date` date NOT NULL COMMENT '購入日付',
   `item_group_title` varchar(255) DEFAULT NULL COMMENT '費目 大分類',
   `item_title` varchar(255) DEFAULT NULL COMMENT '費目 小分類',
   `memo` varchar(255) DEFAULT NULL COMMENT 'メモ',
+  `paid_way` varchar(255) DEFAULT NULL COMMENT '支払方法',
+  `paid_by` varchar(255) DEFAULT NULL COMMENT '支払者',
   `paid_for` varchar(255) DEFAULT NULL COMMENT '誰のためのお金か',
   `debtor` varchar(255) DEFAULT NULL COMMENT '支払うべき人',
   `created` datetime DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `receiot_hd_key` (`hd_id`),
   KEY `item_group_title` (`item_group_title`),
   KEY `debtor` (`debtor`),
-  CONSTRAINT `debtor` FOREIGN KEY (`debtor`) REFERENCES `members` (`name`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `item_group_title` FOREIGN KEY (`item_group_title`) REFERENCES `item_groups` (`title`) ON DELETE NO ACTION ON UPDATE NO ACTION,
-  CONSTRAINT `receiot_hd_key` FOREIGN KEY (`hd_id`) REFERENCES `receipt_hds` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='レシートの詳細データ\r\n・receipt_hd : receipt_bdは1:1～n\r\n・詳細データは、同じ種類の複数品目の集合';
+  KEY `paid_by` (`paid_by`),
+  KEY `paid_way` (`paid_way`),
+  CONSTRAINT `deptor_key` FOREIGN KEY (`debtor`) REFERENCES `members` (`name`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `item_group_key` FOREIGN KEY (`item_group_title`) REFERENCES `item_groups` (`title`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `paid_by` FOREIGN KEY (`paid_by`) REFERENCES `members` (`name`) ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT `paid_way` FOREIGN KEY (`paid_way`) REFERENCES `pay_ways` (`title`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='支出';
 
 -- エクスポートするデータが選択されていません
 
 
--- Dumping structure for テーブル kakei_manager.receipt_hds
-DROP TABLE IF EXISTS `receipt_hds`;
-CREATE TABLE IF NOT EXISTS `receipt_hds` (
-  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'レシートヘッダid',
-  `date` date NOT NULL COMMENT '購入日',
-  `total_amount` int(11) NOT NULL DEFAULT '0' COMMENT 'レシートの金額',
-  `tax_type` int(1) NOT NULL DEFAULT '0' COMMENT '0:内税/1:外税',
-  `paid_way` int(11) DEFAULT '0' COMMENT '支払方法',
+-- Dumping structure for テーブル kakei_manager.payment_tags
+CREATE TABLE IF NOT EXISTS `payment_tags` (
+  `payment_id` int(11) NOT NULL,
+  `tag_id` int(11) NOT NULL,
+  PRIMARY KEY (`payment_id`,`tag_id`),
+  KEY `tag_key` (`tag_id`),
+  CONSTRAINT `payment_key` FOREIGN KEY (`payment_id`) REFERENCES `payments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `tag_key` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- エクスポートするデータが選択されていません
+
+
+-- Dumping structure for テーブル kakei_manager.pay_ways
+CREATE TABLE IF NOT EXISTS `pay_ways` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL COMMENT '支払方法名',
   `paid_by` varchar(255) DEFAULT NULL COMMENT '支払者',
-  `created` datetime DEFAULT '0000-00-00 00:00:00',
-  `modified` datetime DEFAULT '0000-00-00 00:00:00',
+  `created` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `paid_by_key` (`paid_by`),
-  CONSTRAINT `paid_by_key` FOREIGN KEY (`paid_by`) REFERENCES `members` (`name`) ON DELETE NO ACTION ON UPDATE NO ACTION
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='レシートのヘッダ情報';
+  UNIQUE KEY `title` (`title`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='支払方法';
 
 -- エクスポートするデータが選択されていません
 
 
 -- Dumping structure for テーブル kakei_manager.tags
-DROP TABLE IF EXISTS `tags`;
 CREATE TABLE IF NOT EXISTS `tags` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) DEFAULT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `title` varchar(255) DEFAULT NULL COMMENT 'タグ名',
   `created` datetime DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='出張にかかった費用とか、クリスマスの為に食材を奮発したとか、普段とは違う用途をタグ付けしたり、自由にグルーピングできる';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='出張にかかった費用とか、クリスマスの為に食材を奮発したとか、普段とは違う用途をタグ付けしたり、自由にグルーピングできる';
 
 -- エクスポートするデータが選択されていません
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
